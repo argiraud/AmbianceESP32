@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <ESPAsyncWebServer.h>
 #include <SPIFFS.h>
-#include <WiFiUdp.h>
+#include <AsyncUDP.h>
 
 const char *ssid = "test";
 const char *password = "password";
@@ -11,8 +11,8 @@ const int capteurLuminosite = 34;
 
 AsyncWebServer server(80);
 
-WiFiUDP udp;
-const char * udpAdress = "192.168.0.255";
+AsyncUDP udp;
+const char * udpAdress = "192.168.4.255";
 const int udpPort = 3333;
 
 void setup()
@@ -65,7 +65,7 @@ void setup()
 	// Serial.println(WiFi.localIP());
 
   //----------------------------------------------------UDP
-  udp.begin(WiFi.localIP(), udpPort);
+  udp.listen(udpPort);
 
   //----------------------------------------------------SERVER
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
@@ -87,17 +87,17 @@ void setup()
 
   server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request)
   {
-    Serial.println("udp")
-    udp.beginPacket(udpAdress, udpPort);
-    udp.printf("TEST");
-    udp.endPacket();
+    Serial.println("udp");
+    udp.broadcast("On");
     digitalWrite(led, HIGH);
     request->send(200);
   });
 
   server.on("/off", HTTP_GET, [](AsyncWebServerRequest *request)
   {
-    digitalWrite(led, LOW);
+    Serial.println("udp");
+    udp.broadcast("Off");
+    digitalWrite(led, HIGH);
     request->send(200);
   });
 
