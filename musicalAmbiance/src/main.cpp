@@ -101,6 +101,27 @@ void setup()
     request->send(200);
   });
 
+  server.on("/chillMode", HTTP_GET, [](AsyncWebServerRequest *request)
+  {
+    Serial.println("udp");
+    udp.broadcast("ChillMode");
+    request->send(200);
+  });
+
+    server.on("/test", HTTP_GET, [](AsyncWebServerRequest *request)
+  {
+    Serial.println("udp");
+    udp.broadcast("Test");
+    request->send(200);
+  });
+
+  server.on("/colorMode:", HTTP_GET, [](AsyncWebServerRequest *request)
+  {
+    Serial.println("udp");
+    udp.broadcast("ColorMode:");
+    request->send(200);
+  });
+
   server.begin();
   Serial.println("Serveur actif!");
 }

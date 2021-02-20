@@ -10,6 +10,25 @@ function offButton() {
     xhttp.send();
 }
 
+function chillButton() {
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("GET", "chillMode", true);
+    xhttp.send();
+}
+
+function ambianceButton() {
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("GET", "test", true);
+    xhttp.send();
+}
+
+function colorButton() {
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("GET", "colorMode:", true);
+    xhttp.send();
+}
+
+
 setInterval(function getData()
 {
     var xhttp = new XMLHttpRequest();
@@ -22,6 +41,6 @@ setInterval(function getData()
         }
     };
 
-    xhttp.open("GET", "lireLuminosite", true);
+    xhttp.open("GET", "LireLuminosite", true);
     xhttp.send();
 }, 2000);
