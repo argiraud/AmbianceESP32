@@ -28,6 +28,30 @@ function colorButton() {
     xhttp.send();
 }
 
+function colorBlueButton() {
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("GET", "colorMode/blue", true);
+    xhttp.send();
+}
+
+function colorGreenButton() {
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("GET", "colorMode/green", true);
+    xhttp.send();
+}
+
+function colorRedButton() {
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("GET", "colorMode/red", true);
+    xhttp.send();
+}
+
+function colorYellowButton() {
+    var xhttp = new XMLHttpRequest();
+    xhttp.open("GET", "colorMode/yellow", true);
+    xhttp.send();
+}
+
 
 setInterval(function getData()
 {

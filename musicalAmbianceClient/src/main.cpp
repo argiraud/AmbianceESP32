@@ -4,9 +4,10 @@
 #include <FastLED.h>
 
 #define LED_PIN 15
-#define NUM_LEDS 144
-#define MIC_LOW 0
-#define MIC_HIGH 644
+#define SENSOR_PIN 14
+#define NUM_LEDS 60
+#define MIC_LOW 1900
+#define MIC_HIGH 2200
 
 #define SAMPLE_SIZE 20
 #define LONG_TERM_SAMPLES 250
@@ -18,6 +19,9 @@ CRGB leds[NUM_LEDS];
 const char * ssid = "test";
 const char * password = "password";
 int udpPort = 3333;
+
+int micValue = 0;
+String colorValue = "";
 
 String received_message;
 boolean fade = false;
@@ -79,9 +83,25 @@ Options resolveOption(String input){
   if (input == "On") return On;
   if (input == "Off") return Off;
   if (input == "ChillMode") return ChillMode;
-  if (input == "Test") return AmbianceMode;
+  if (input == "a") return AmbianceMode;
   if (input == "ColorMode") return ColorMode;
   return OptionInvalid;
+}
+
+enum Color {
+  Red,
+  Yellow,
+  Green,
+  Blue,
+  Invalid
+};
+
+Color resolveColor(String input){
+  if (input == "b") return Blue;
+  if (input == "y") return Yellow;
+  if (input == "r") return Red;
+  if (input == "g") return Green;
+  return Invalid;
 }
 
 void allWhite() {
@@ -98,6 +118,47 @@ void allOff() {
   }
   delay(5);
   FastLED.show();
+}
+
+void changeColor() {
+  switch (resolveColor(colorValue))
+  {
+  case Blue:
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = CRGB(0, 0, 255);
+    }
+    delay(5);
+    FastLED.show();
+    break;
+  case Red:
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = CRGB(255, 0, 0);
+    }
+    delay(5);
+    FastLED.show();
+    break;
+    case Yellow:
+      for (int i = 0; i < NUM_LEDS; i++) {
+        leds[i] = CRGB(255, 255, 0);
+      }
+      delay(5);
+      FastLED.show();
+      break;
+    case Green:
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = CRGB(0, 128, 0);
+    }
+    delay(5);
+    FastLED.show();
+    break;
+  default:
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = CRGB(255, 255, 255);
+    }
+    delay(5);
+    FastLED.show();
+    break;
+  }
 }
 
 void chillFade() {
@@ -212,18 +273,14 @@ float fscale(float originalMin, float originalMax, float newBegin, float newEnd,
 }
 
 void soundReactive(int analogRaw) {
- Serial.println("debut");
  int sanityValue = sanityBuffer->computeAverage();
- Serial.println("AvantIf");
  if (!(abs(analogRaw - sanityValue) > BUFFER_DEVIATION)) {
     sanityBuffer->setSample(analogRaw);
  }
- Serial.println("ApresIf");
   analogRaw = fscale(MIC_LOW, MIC_HIGH, MIC_LOW, MIC_HIGH, analogRaw, 0.4);
 
   if (samples->setSample(analogRaw))
     return;
-    Serial.println("Apres2If");
   uint16_t longTermAverage = longTermSamples->computeAverage();
   uint16_t useVal = samples->computeAverage();
   longTermSamples->setSample(useVal);
@@ -244,10 +301,9 @@ void soundReactive(int analogRaw) {
     }
   }
 
-Serial.println("Avantfscale");
   int curshow = fscale(MIC_LOW, MIC_HIGH, 0.0, (float)NUM_LEDS, (float)useVal, 0);
   //int curshow = map(useVal, MIC_LOW, MIC_HIGH, 0, NUM_LEDS)
-Serial.println("Apresfascale");
+
   for (int i = 0; i < NUM_LEDS; i++)
   {
     if (i < curshow)
@@ -272,7 +328,11 @@ void changeMode(String msg){
     break;
 
   case Off:
-    allOff();
+    if(digitalRead(SENSOR_PIN) == 1){
+      allWhite();
+    } else {    
+      allOff();
+    }
     break;
   
   case ChillMode:
@@ -280,21 +340,38 @@ void changeMode(String msg){
     break;
 
   case AmbianceMode:
-    Serial.println("AmbianceMode");
     fade = false;
-    soundReactive(random(200));
+    soundReactive(micValue);
     break;
 
   case ColorMode:
-    allOff();
+    changeColor();
     break;
   
   default:
-    Serial.print("Default");
-    Serial.println(msg);
-    allOff();
+    if(digitalRead(SENSOR_PIN) == 1){
+      allWhite();
+    } else {    
+      allOff();
+    }
     break;
   }
+}
+
+String getValue(String data, char separator, int index)
+{
+    int found = 0;
+    int strIndex[] = { 0, -1 };
+    int maxIndex = data.length() - 1;
+
+    for (int i = 0; i <= maxIndex && found <= index; i++) {
+        if (data.charAt(i) == separator || i == maxIndex) {
+            found++;
+            strIndex[0] = strIndex[1] + 1;
+            strIndex[1] = (i == maxIndex) ? i+1 : i;
+        }
+    }
+    return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
 
 void setup() {
@@ -312,10 +389,20 @@ void setup() {
     Serial.println("Ecoute sur le port: " + String(udpPort));
     udp.onPacket([](AsyncUDPPacket packet){
       Serial.println((char*)packet.data());
-      received_message = String((char*)packet.data());
-      received_message.trim();
-      Serial.println(received_message);
-      // changeMode(msg);
+      String mes = String((char*)packet.data());
+      mes.trim();
+      received_message = getValue(mes, '/', 0);
+      if (resolveOption(received_message) == AmbianceMode)
+      {
+        Serial.println(received_message);
+        Serial.println(getValue(mes, '/', 1));
+        micValue = getValue(mes, '/', 1).toInt();
+        Serial.println(micValue);
+      } else if(resolveOption(received_message) == ColorMode){
+        Serial.println(received_message);
+        Serial.println(getValue(mes, '/', 1));
+        colorValue = getValue(mes, '/', 1);
+      }
     });
   }
 

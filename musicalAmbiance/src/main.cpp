@@ -7,13 +7,15 @@ const char *ssid = "test";
 const char *password = "password";
 
 const int led = 13;
-const int capteurLuminosite = 34;
+const int micpin = 32;
 
 AsyncWebServer server(80);
 
 AsyncUDP udp;
 const char * udpAdress = "192.168.4.255";
 const int udpPort = 3333;
+
+boolean micOn=false;
 
 void setup()
 {
@@ -24,7 +26,7 @@ void setup()
   //----------------------------------------------------GPIO
   pinMode(led, OUTPUT);
   digitalWrite(led, LOW);
-  pinMode(capteurLuminosite, INPUT);
+  pinMode(micpin, INPUT);
 
   //----------------------------------------------------SPIFFS
   if(!SPIFFS.begin())
@@ -78,16 +80,10 @@ void setup()
     request->send(SPIFFS, "/script.js", "text/javascript");
   });
 
-  server.on("/lireLuminosite", HTTP_GET, [](AsyncWebServerRequest *request)
-  {
-    int val = analogRead(capteurLuminosite);
-    String luminosite = String(val);
-    request->send(200, "text/plain", luminosite);
-  });
-
   server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request)
   {
     Serial.println("udp");
+    micOn = false;
     udp.broadcast("On");
     digitalWrite(led, HIGH);
     request->send(200);
@@ -96,6 +92,7 @@ void setup()
   server.on("/off", HTTP_GET, [](AsyncWebServerRequest *request)
   {
     Serial.println("udp");
+    micOn = false;
     udp.broadcast("Off");
     digitalWrite(led, HIGH);
     request->send(200);
@@ -104,6 +101,7 @@ void setup()
   server.on("/chillMode", HTTP_GET, [](AsyncWebServerRequest *request)
   {
     Serial.println("udp");
+    micOn = false;
     udp.broadcast("ChillMode");
     request->send(200);
   });
@@ -111,14 +109,48 @@ void setup()
     server.on("/test", HTTP_GET, [](AsyncWebServerRequest *request)
   {
     Serial.println("udp");
-    udp.broadcast("Test");
+    micOn = true;
+    udp.broadcast("a/2000");
     request->send(200);
   });
 
   server.on("/colorMode:", HTTP_GET, [](AsyncWebServerRequest *request)
   {
     Serial.println("udp");
+    micOn = false;
     udp.broadcast("ColorMode:");
+    request->send(200);
+  });
+
+  server.on("/colorMode/green", HTTP_GET, [](AsyncWebServerRequest *request)
+  {
+    Serial.println("green");
+    micOn = false;
+    udp.broadcast("ColorMode/g");
+    request->send(200);
+  });
+
+  server.on("/colorMode/yellow", HTTP_GET, [](AsyncWebServerRequest *request)
+  {
+    Serial.println("yellow");
+    micOn = false;
+    udp.broadcast("ColorMode/y");
+    request->send(200);
+  });
+
+  server.on("/colorMode/red", HTTP_GET, [](AsyncWebServerRequest *request)
+  {
+    Serial.println("red");
+    micOn = false;
+    udp.broadcast("ColorMode/r");
+    request->send(200);
+  });
+
+  server.on("/colorMode/blue", HTTP_GET, [](AsyncWebServerRequest *request)
+  {
+    Serial.println("blue");
+    micOn = false;
+    udp.broadcast("ColorMode/b");
     request->send(200);
   });
 
@@ -128,4 +160,22 @@ void setup()
 
 void loop()
 {
+  //Serial.println(analogRead(micpin));
+  if(micOn){
+    //Serial.println(analogRead(micpin));
+    //  String msgString = "a/";
+    //String msgString = "a/" + analogRead(micpin);
+    // String msgString = String('a/' + (uint16_t)analogRead(micpin));
+    char text[6];
+    sprintf(text, "a/%d", analogRead(micpin));
+    //Serial.println(text);
+//now use text as string  
+    // Serial.println(msgString);
+    // char charBuf[50] = "";
+    // msgString.toCharArray(charBuf, 50);  
+    // Serial.println(msgString);
+    // Serial.println(charBuf);
+    udp.broadcast(text);
+    delay(500);
+  }
 }
