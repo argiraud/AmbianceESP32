@@ -1,0 +1,6 @@
+framework module Pods_AmbianceMusicale_Baudin_Giraud {
+  umbrella header "Pods-AmbianceMusicale_Baudin_Giraud-umbrella.h"
+
+  export *
+  module * { export * }
+}
